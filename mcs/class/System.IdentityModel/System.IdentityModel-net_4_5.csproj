@@ -134,7 +134,9 @@
     <Compile Include="System.IdentityModel.Tokens\SamlDoNotCacheCondition.cs" />
     <Compile Include="System.IdentityModel.Tokens\SamlEvidence.cs" />
     <Compile Include="System.IdentityModel.Tokens\SamlNameIdentifierClaimResource.cs" />
+    <Compile Include="System.IdentityModel.Tokens\Saml2SecurityTokenHandler.cs" />
     <Compile Include="System.IdentityModel.Tokens\SamlSecurityToken.cs" />
+    <Compile Include="System.IdentityModel.Tokens\SamlSecurityTokenHandler.cs" />
     <Compile Include="System.IdentityModel.Tokens\SamlSerializer.cs" />
     <Compile Include="System.IdentityModel.Tokens\SamlStatement.cs" />
     <Compile Include="System.IdentityModel.Tokens\SamlSubject.cs" />

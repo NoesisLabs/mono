@@ -1,30 +1,8 @@
-﻿//
-// SecurityTokenHandlerCollection.cs
-//
-// Author:
-//   Noesis Labs (Ryan.Melena@noesislabs.com)
-//
-// Copyright (C) 2014 Noesis Labs, LLC  https://noesislabs.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-// 
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
+//-----------------------------------------------------------------------
+// <copyright file="SecurityTokenHandlerCollection.cs" company="Microsoft">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 #if NET_4_5
 
 using System;
@@ -36,162 +14,664 @@ using System.Xml;
 
 namespace System.IdentityModel.Tokens
 {
-	public class SecurityTokenHandlerCollection : Collection<SecurityTokenHandler>
-	{
-		private SecurityTokenHandlerConfiguration config;
-		private IEnumerable<string> tokenTypeIdentifiers = new List<string> ();
-		private IEnumerable<Type> tokenTypes = new List<Type> ();
+    /// <summary>
+    /// Defines a collection of SecurityTokenHandlers.
+    /// </summary>
+    public class SecurityTokenHandlerCollection : Collection<SecurityTokenHandler>
+    {
+        private Dictionary<string, SecurityTokenHandler> handlersByIdentifier = new Dictionary<string, SecurityTokenHandler>();
+        private Dictionary<Type, SecurityTokenHandler> handlersByType = new Dictionary<Type, SecurityTokenHandler>();
 
-		public SecurityTokenHandlerConfiguration Configuration { get { return this.config; } }
-		public IEnumerable<string> TokenTypeIdentifiers { get { return tokenTypeIdentifiers; } }
-		public IEnumerable<Type> TokenTypes { get { return tokenTypes; } }
-		public SecurityTokenHandler this[SecurityToken token] {
-			get {
-				if (token == null) { return null; }
+        private SecurityTokenHandlerConfiguration configuration;
 
-				return this[token.GetType ()];
-			}
-		}
-		[MonoTODO]
-		public SecurityTokenHandler this[string tokenTypeIdentifier] {
-			get {
-				throw new NotImplementedException ();
-			}
-		}
-		[MonoTODO]
-		public SecurityTokenHandler this[Type tokenType] {
-			get {
-				throw new NotImplementedException ();
-			}
-		}
+        //private KeyInfoSerializer keyInfoSerializer;
 
-		public SecurityTokenHandlerCollection ()
-			: this(new SecurityTokenHandlerConfiguration ())
-		{ }
+        /// <summary>
+        /// Creates an instance of <see cref="SecurityTokenHandlerCollection"/>.
+        /// Creates an empty set.
+        /// </summary>
+        public SecurityTokenHandlerCollection()
+            : this(new SecurityTokenHandlerConfiguration())
+        {
+        }
 
-		public SecurityTokenHandlerCollection (SecurityTokenHandlerConfiguration configuration) {
-			config = configuration;
-		}
+        /// <summary>
+        /// Creates an instance of <see cref="SecurityTokenHandlerCollection"/>.
+        /// Creates an empty set.
+        /// </summary>
+        /// <param name="configuration">The configuration to associate with the collection.</param>
+        public SecurityTokenHandlerCollection(SecurityTokenHandlerConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException("configuration");
+            }
 
-		public SecurityTokenHandlerCollection (IEnumerable<SecurityTokenHandler> handlers)
-			: this (handlers, new SecurityTokenHandlerConfiguration ())
-		{ }
+            this.configuration = configuration;
+            //this.keyInfoSerializer = new KeyInfoSerializer(true);
+        }
 
-		public SecurityTokenHandlerCollection (IEnumerable<SecurityTokenHandler> handlers, SecurityTokenHandlerConfiguration configuration) : this (configuration) {
-			foreach (var handler in handlers) {
-				Add (handler);
-			}
-		}
+        /// <summary>
+        /// Creates an instance of <see cref="SecurityTokenHandlerCollection"/>
+        /// </summary>
+        /// <param name="handlers">List of SecurityTokenHandlers to initialize from.</param>
+        /// <remarks>
+        /// Do not use this constructor to attempt to clone an instance of a SecurityTokenHandlerCollection,
+        /// use the Clone method instead.
+        /// </remarks>
+        public SecurityTokenHandlerCollection(IEnumerable<SecurityTokenHandler> handlers)
+            : this(handlers, new SecurityTokenHandlerConfiguration())
+        {
+        }
 
-		[MonoTODO]
-		public void AddOrReplace(SecurityTokenHandler handler) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Creates an instance of <see cref="SecurityTokenHandlerCollection"/>
+        /// </summary>
+        /// <param name="handlers">List of SecurityTokenHandlers to initialize from.</param>
+        /// <param name="configuration">The <see cref="SecurityTokenHandlerConfiguration"/> in effect.</param>
+        /// <remarks>
+        /// Do not use this constructor to attempt to clone an instance of a SecurityTokenHandlerCollection,
+        /// use the Clone method instead.
+        /// </remarks>
+        public SecurityTokenHandlerCollection(IEnumerable<SecurityTokenHandler> handlers, SecurityTokenHandlerConfiguration configuration)
+            : this(configuration)
+        {
+            if (handlers == null)
+            {
+                throw new ArgumentNullException("handlers");
+            }
 
-		[MonoTODO]
-		public bool CanReadKeyIdentifierClause(XmlReader reader) {
-			throw new NotImplementedException ();
-		}
+            foreach (SecurityTokenHandler handler in handlers)
+            {
+                Add(handler);
+            }
+        }
 
-		[MonoTODO]
-		protected virtual bool CanReadKeyIdentifierClauseCore(XmlReader reader) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Gets an instance of <see cref="SecurityTokenHandlerConfiguration"/>
+        /// </summary>
+        public SecurityTokenHandlerConfiguration Configuration
+        {
+            get { return this.configuration; }
+        }
 
-		[MonoTODO]
-		public bool CanReadToken(string tokenString) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Gets the List of System.Type of the Token Handlers in this collection.
+        /// </summary>
+        public IEnumerable<Type> TokenTypes
+        {
+            get { return this.handlersByType.Keys; }
+        }
 
-		[MonoTODO]
-		public bool CanReadToken(XmlReader reader) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Gets the list of Token type Identifier of the Token Handlers.
+        /// </summary>
+        public IEnumerable<string> TokenTypeIdentifiers
+        {
+            get
+            {
+                return this.handlersByIdentifier.Keys;
+            }
+        }
 
-		[MonoTODO]
-		public bool CanWriteToken(SecurityToken token) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Gets a Token Handler by its Token Type Identifier.
+        /// </summary>
+        /// <param name="tokenTypeIdentifier">The Token Type Identfier string to search for.</param>
+        /// <returns>Instance of a SecurityTokenHandler.</returns>
+        public SecurityTokenHandler this[string tokenTypeIdentifier]
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(tokenTypeIdentifier))
+                {
+                    return null;
+                }
 
-		[MonoTODO]
-		protected override void ClearItems() {
-			throw new NotImplementedException ();
-		}
+                SecurityTokenHandler handler;
+                this.handlersByIdentifier.TryGetValue(tokenTypeIdentifier, out handler);
+                return handler;
+            }
+        }
 
-		[MonoTODO]
-		public static SecurityTokenHandlerCollection CreateDefaultSecurityTokenHandlerCollection() {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Gets a Token Handler that can handle a given SecurityToken.
+        /// </summary>
+        /// <param name="token">SecurityToken for which a Token Handler is requested.</param>
+        /// <returns>Instance of SecurityTokenHandler.</returns>
+        public SecurityTokenHandler this[SecurityToken token]
+        {
+            get
+            {
+                if (null == token)
+                {
+                    return null;
+                }
 
-		[MonoTODO]
-		public static SecurityTokenHandlerCollection CreateDefaultSecurityTokenHandlerCollection(SecurityTokenHandlerConfiguration configuration) {
-			throw new NotImplementedException ();
-		}
+                return this[token.GetType()];
+            }
+        }
 
-		[MonoTODO]
-		public SecurityToken CreateToken(SecurityTokenDescriptor tokenDescriptor) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Gets a Token Handler based on the System.Type of the token.
+        /// </summary>
+        /// <param name="tokenType">System.Type of the Token that needs to be handled.</param>
+        /// <returns>Instance of SecurityTokenHandler.</returns>
+        public SecurityTokenHandler this[Type tokenType]
+        {
+            get
+            {
+                SecurityTokenHandler handler = null;
+                if (tokenType != null)
+                {
+                    this.handlersByType.TryGetValue(tokenType, out handler);
+                }
 
-		[MonoTODO]
-		protected override void InsertItem(int index, SecurityTokenHandler item) {
-			throw new NotImplementedException ();
-		}
+                return handler;
+            }
+        }
 
-		[MonoTODO]
-		public SecurityKeyIdentifierClause ReadKeyIdentifierClause(XmlReader reader) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Creates a system default collection of basic SecurityTokenHandlers, each of which has the system default configuration.
+        /// The SecurityTokenHandlers in this collection must be configured with service specific data before they can be used.
+        /// </summary>
+        /// <returns>A SecurityTokenHandlerCollection with default basic SecurityTokenHandlers.</returns>
+        public static SecurityTokenHandlerCollection CreateDefaultSecurityTokenHandlerCollection()
+        {
+            throw new NotImplementedException();
+        }
 
-		[MonoTODO]
-		protected virtual SecurityKeyIdentifierClause ReadKeyIdentifierClauseCore(XmlReader reader) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Creates a system default collection of basic SecurityTokenHandlers, each of which has the system default configuration.
+        /// The SecurityTokenHandlers in this collection must be configured with service specific data before they can be used.
+        /// </summary>
+        /// <param name="configuration">The configuration to associate with the collection.</param>
+        /// <returns>A SecurityTokenHandlerCollection with default basic SecurityTokenHandlers.</returns>
+        public static SecurityTokenHandlerCollection CreateDefaultSecurityTokenHandlerCollection(SecurityTokenHandlerConfiguration configuration)
+        {
+            throw new NotImplementedException();
+        }
 
-		[MonoTODO]
-		public SecurityToken ReadToken(string tokenString) {
-			throw new NotImplementedException ();
-		}
+        //internal SecurityTokenSerializer KeyInfoSerializer
+        //{
+        //    get { return this.keyInfoSerializer; }
+        //}
 
-		[MonoTODO]
-		public SecurityToken ReadToken(XmlReader reader) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Adds a new handler or replace the existing handler with the same token type identifier 
+        /// with with the new handler.
+        /// </summary>
+        /// <param name="handler">The SecurityTokenHandler to add or replace</param>
+        /// <exception cref="ArgumentNullException">When the input parameter is null.</exception>
+        public void AddOrReplace(SecurityTokenHandler handler)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException("handler");
+            }
 
-		[MonoTODO]
-		protected override void RemoveItem(int index) {
-			throw new NotImplementedException ();
-		}
+            // Remove the old one if it exists
+            Type tokenType = handler.TokenType;
+            if (tokenType != null && this.handlersByType.ContainsKey(tokenType))
+            {
+                Remove(this[tokenType]);
+            }
+            else
+            {
+                string[] identifiers = handler.GetTokenTypeIdentifiers();
+                if (identifiers != null)
+                {
+                    foreach (string tokenTypeIdentifier in identifiers)
+                    {
+                        if (tokenTypeIdentifier != null && this.handlersByIdentifier.ContainsKey(tokenTypeIdentifier))
+                        {
+                            Remove(this[tokenTypeIdentifier]);
+                            break;
+                        }
+                    }
+                }
+            }
 
-		[MonoTODO]
-		protected override void SetItem(int index, SecurityTokenHandler item) {
-			throw new NotImplementedException ();
-		}
+            // Add the new handler in the collection
+            Add(handler);
+        }
 
-		[MonoTODO]
-		public ReadOnlyCollection<ClaimsIdentity> ValidateToken(SecurityToken token) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Checks if a token can be read using the SecurityTokenHandlers.
+        /// </summary>
+        /// <param name="reader">XmlReader pointing at token.</param>
+        /// <returns>True if the token can be read, false otherwise</returns>
+        /// <exception cref="ArgumentNullException">The input argument 'reader' is null.</exception>
+        public bool CanReadToken(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException("reader");
+            }
 
-		[MonoTODO]
-		public void WriteKeyIdentifierClause(XmlWriter writer, SecurityKeyIdentifierClause keyIdentifierClause) {
-			throw new NotImplementedException ();
-		}
+            foreach (SecurityTokenHandler handler in this)
+            {
+                if (null != handler && handler.CanReadToken(reader))
+                {
+                    return true;
+                }
+            }
 
-		[MonoTODO]
-		protected virtual void WriteKeyIdentifierClauseCore(XmlWriter writer, SecurityKeyIdentifierClause keyIdentifierClause) {
-			throw new NotImplementedException ();
-		}
+            return false;
+        }
 
-		[MonoTODO]
-		public string WriteToken(SecurityToken token) {
-			throw new NotImplementedException ();
-		}
+        /// <summary>
+        /// Checks if a token can be read using the SecurityTokenHandlers.
+        /// </summary>
+        /// <param name="tokenString">The token string thats needs to be read.</param>
+        /// <returns>True if the token can be read, false otherwise</returns>
+        /// <exception cref="ArgumentException">The input argument 'tokenString' is null or empty.</exception>
+        public bool CanReadToken(string tokenString)
+        {
+            if (String.IsNullOrEmpty(tokenString))
+            {
+                throw new ArgumentNullException("tokenString");
+            }
 
-		[MonoTODO]
-		public void WriteToken(XmlWriter writer, SecurityToken token) {
-			throw new NotImplementedException ();
-		}
-	}
+            foreach (SecurityTokenHandler handler in this)
+            {
+                if (null != handler && handler.CanReadToken(tokenString))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        /// <summary>
+        /// Checks if a token can be written using the SecurityTokenHandlers.
+        /// </summary>
+        /// <param name="token">SecurityToken to be written out.</param>
+        /// <returns>True if the token can be written, false otherwise</returns>
+        /// <exception cref="ArgumentNullException">The input argument 'token' is null.</exception>
+        public bool CanWriteToken(SecurityToken token)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException("token");
+            }
+
+            SecurityTokenHandler handler = this[token];
+            if (null != handler && handler.CanWriteToken)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Creates a SecurityToken from the given SecurityTokenDescriptor using the list of
+        /// SecurityTokenHandlers.
+        /// </summary>
+        /// <param name="tokenDescriptor">SecurityTokenDescriptor for the token to be created.</param>
+        /// <returns>Instance of <see cref="SecurityToken"/></returns>
+        /// <exception cref="ArgumentNullException">The input argument 'tokenDescriptor' is null.</exception>
+        public SecurityToken CreateToken(SecurityTokenDescriptor tokenDescriptor)
+        {
+            if (tokenDescriptor == null)
+            {
+                throw new ArgumentNullException("tokenDescriptor");
+            }
+
+            SecurityTokenHandler handler = this[tokenDescriptor.TokenType];
+            if (null == handler)
+            {
+                throw new InvalidOperationException(tokenDescriptor.TokenType.ToString());
+            }
+
+            return handler.CreateToken(tokenDescriptor);
+        }
+
+        /// <summary>
+        /// Validates a given token using the SecurityTokenHandlers.
+        /// </summary>
+        /// <param name="token">The SecurityToken to be validated.</param>
+        /// <returns>A <see cref="ReadOnlyCollection{T}"/> of <see cref="ClaimsIdentity"/> representing the identities contained in the token.</returns>
+        /// <exception cref="ArgumentNullException">The input argument 'token' is null.</exception>
+        /// <exception cref="InvalidOperationException">A <see cref="SecurityTokenHandler"/> cannot be found that can validate the <see cref="SecurityToken"/>.</exception>                
+        public ReadOnlyCollection<ClaimsIdentity> ValidateToken(SecurityToken token)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException("token");
+            }
+
+            SecurityTokenHandler handler = this[token];
+            if (null == handler || !handler.CanValidateToken)
+            {
+                throw new InvalidOperationException(token.GetType().ToString());
+            }
+
+            return handler.ValidateToken(token);
+        }
+
+        /// <summary>
+        /// Reads a token using the TokenHandlers.
+        /// </summary>
+        /// <param name="reader">XmlReader pointing at token.</param>
+        /// <returns>Instance of <see cref="SecurityToken"/></returns>
+        /// <exception cref="ArgumentNullException">The input argument 'reader' is null.</exception>
+        public SecurityToken ReadToken(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException("reader");
+            }
+
+            foreach (SecurityTokenHandler handler in this)
+            {
+                if (null != handler && handler.CanReadToken(reader))
+                {
+                    return handler.ReadToken(reader);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Reads a token using the TokenHandlers.
+        /// </summary>
+        /// <param name="tokenString">The token string to be deserialized.</param>
+        /// <returns>Instance of <see cref="SecurityToken"/></returns>
+        /// <exception cref="ArgumentException">The input argument 'tokenString' is null or empty.</exception>
+        public SecurityToken ReadToken(string tokenString)
+        {
+            if (String.IsNullOrEmpty(tokenString))
+            {
+                throw new ArgumentNullException("tokenString");
+            }
+
+            foreach (SecurityTokenHandler handler in this)
+            {
+                if (null != handler && handler.CanReadToken(tokenString))
+                {
+                    return handler.ReadToken(tokenString);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Writes a given SecurityToken to the XmlWriter.
+        /// </summary>
+        /// <param name="writer">XmlWriter to write the token into.</param>
+        /// <param name="token">SecurityToken to be written out.</param>
+        /// <exception cref="ArgumentNullException">The input argument 'writer' or 'token' is null.</exception>
+        public void WriteToken(XmlWriter writer, SecurityToken token)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException("writer");
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException("token");
+            }
+
+            SecurityTokenHandler handler = this[token];
+            if (null == handler || !handler.CanWriteToken)
+            {
+                throw new InvalidOperationException(token.GetType().ToString());
+            }
+
+            handler.WriteToken(writer, token);
+        }
+
+        /// <summary>
+        /// Writes a given SecurityToken to a string.
+        /// </summary>
+        /// <param name="token">SecurityToken to be written out.</param>
+        /// <returns>The serialized token.</returns>
+        /// <exception cref="ArgumentNullException">The input argument 'token' is null.</exception>
+        public string WriteToken(SecurityToken token)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException("token");
+            }
+
+            SecurityTokenHandler handler = this[token];
+            if (null == handler || !handler.CanWriteToken)
+            {
+                throw new InvalidOperationException(token.GetType().ToString());
+            }
+
+            return handler.WriteToken(token);
+        }
+
+        /// <summary>
+        /// Override. (Inherited from Collection&lt;T>"/>
+        /// </summary>
+        protected override void ClearItems()
+        {
+            base.ClearItems();
+            this.handlersByIdentifier.Clear();
+            this.handlersByType.Clear();
+        }
+
+        /// <summary>
+        /// Override. (Inherited from Collection&lt;T&gt;"/>
+        /// </summary>
+        /// <param name="index">The zero-based index at which item should be inserted.</param>
+        /// <param name="item">The object to insert. The value can be null for reference types.</param>
+        protected override void InsertItem(int index, SecurityTokenHandler item)
+        {
+            base.InsertItem(index, item);
+
+            try
+            {
+                this.AddToDictionaries(item);
+            }
+            catch
+            {
+                base.RemoveItem(index);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Override. (Inherited from Collection&lt;T>"/>
+        /// </summary>
+        /// <param name="index">The zero-based index of the element to remove.</param>
+        protected override void RemoveItem(int index)
+        {
+            SecurityTokenHandler removedItem = Items[index];
+            base.RemoveItem(index);
+            this.RemoveFromDictionaries(removedItem);
+        }
+
+        /// <summary>
+        /// Override. (Inherited from Collection&lt;T>"/>
+        /// </summary>
+        /// <param name="index">The zero-based index of the element to replace.</param>
+        /// <param name="item">The new value for the element at the specified index. The value can be null for reference types.</param>
+        protected override void SetItem(int index, SecurityTokenHandler item)
+        {
+            SecurityTokenHandler replaced = Items[index];
+            base.SetItem(index, item);
+
+            this.RemoveFromDictionaries(replaced);
+
+            try
+            {
+                this.AddToDictionaries(item);
+            }
+            catch
+            {
+                base.SetItem(index, replaced);
+                this.AddToDictionaries(replaced);
+                throw;
+            }
+        }
+
+        public bool CanReadKeyIdentifierClause(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException("reader");
+            }
+
+            return CanReadKeyIdentifierClauseCore(reader);
+        }
+
+        /// <summary>
+        /// Checks if the wrapped SecurityTokenHandler or the base WSSecurityTokenSerializer can read the 
+        /// SecurityKeyIdentifierClause.
+        /// </summary>
+        /// <param name="reader">Reader to a SecurityKeyIdentifierClause.</param>
+        /// <returns>'True' if the SecurityKeyIdentifierCause can be read.</returns>
+        /// <exception cref="ArgumentNullException">The input parameter 'reader' is null.</exception>
+        protected virtual bool CanReadKeyIdentifierClauseCore(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException("reader");
+            }
+
+            foreach (SecurityTokenHandler securityTokenHandler in this)
+            {
+                if (securityTokenHandler.CanReadKeyIdentifierClause(reader))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public SecurityKeyIdentifierClause ReadKeyIdentifierClause(XmlReader reader)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException("reader");
+            }
+
+            return ReadKeyIdentifierClauseCore(reader);
+        }
+
+        /// <summary>
+        /// Deserializes a SecurityKeyIdentifierClause from the given reader.
+        /// </summary>
+        /// <param name="reader">XmlReader to a SecurityKeyIdentifierClause.</param>
+        /// <returns>The deserialized SecurityKeyIdentifierClause.</returns>
+        /// <exception cref="ArgumentNullException">The input parameter 'reader' is null.</exception>
+        protected virtual SecurityKeyIdentifierClause ReadKeyIdentifierClauseCore(XmlReader reader)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void WriteKeyIdentifierClause(XmlWriter writer, SecurityKeyIdentifierClause keyIdentifierClause)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException("writer");
+            }
+
+            if (keyIdentifierClause == null)
+            {
+                throw new ArgumentNullException("keyIdentifierClause");
+            }
+
+            WriteKeyIdentifierClauseCore(writer, keyIdentifierClause);
+        }
+
+        /// <summary>
+        /// Serializes the given SecurityKeyIdentifierClause in a XmlWriter.
+        /// </summary>
+        /// <param name="writer">XmlWriter to write into.</param>
+        /// <param name="keyIdentifierClause">SecurityKeyIdentifierClause to be written.</param>
+        /// <exception cref="ArgumentNullException">The input parameter 'writer' or 'keyIdentifierClause' is null.</exception>
+        protected virtual void WriteKeyIdentifierClauseCore(XmlWriter writer, SecurityKeyIdentifierClause keyIdentifierClause)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void AddToDictionaries(SecurityTokenHandler handler)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException("handler");
+            }
+
+            bool firstSucceeded = false;
+
+            string[] identifiers = handler.GetTokenTypeIdentifiers();
+            if (identifiers != null)
+            {
+                foreach (string typeId in identifiers)
+                {
+                    if (typeId != null)
+                    {
+                        this.handlersByIdentifier.Add(typeId, handler);
+                        firstSucceeded = true;
+                    }
+                }
+            }
+
+            Type type = handler.TokenType;
+            if (handler.TokenType != null)
+            {
+                try
+                {
+                    this.handlersByType.Add(type, handler);
+                }
+                catch
+                {
+                    if (firstSucceeded)
+                    {
+                        this.RemoveFromDictionaries(handler);
+                    }
+
+                    throw;
+                }
+            }
+
+            // Ensure that the handler knows which collection it is in.
+            handler.ContainingCollection = this;
+
+            // Propagate this collection's STH configuration to the handler
+            // if the handler's configuration is unset.
+            if (handler.Configuration == null)
+            {
+                handler.Configuration = this.configuration;
+            }
+        }
+
+        private void RemoveFromDictionaries(SecurityTokenHandler handler)
+        {
+            string[] identifiers = handler.GetTokenTypeIdentifiers();
+            if (identifiers != null)
+            {
+                foreach (string typeId in identifiers)
+                {
+                    if (typeId != null)
+                    {
+                        this.handlersByIdentifier.Remove(typeId);
+                    }
+                }
+            }
+
+            Type type = handler.TokenType;
+            if (type != null && this.handlersByType.ContainsKey(type))
+            {
+                this.handlersByType.Remove(type);
+            }
+
+            // Ensure that the handler knows that it is no longer
+            // in a collection.
+            handler.ContainingCollection = null;
+            handler.Configuration = null;
+        }
+    }
 }
 #endif

@@ -87,7 +87,9 @@ System.IdentityModel.Tokens/SamlConstants.cs
 System.IdentityModel.Tokens/SamlDoNotCacheCondition.cs
 System.IdentityModel.Tokens/SamlEvidence.cs
 System.IdentityModel.Tokens/SamlNameIdentifierClaimResource.cs
+System.IdentityModel.Tokens/Saml2SecurityTokenHandler.cs
 System.IdentityModel.Tokens/SamlSecurityToken.cs
+System.IdentityModel.Tokens/SamlSecurityTokenHandler.cs
 System.IdentityModel.Tokens/SamlSerializer.cs
 System.IdentityModel.Tokens/SamlStatement.cs
 System.IdentityModel.Tokens/SamlSubject.cs
