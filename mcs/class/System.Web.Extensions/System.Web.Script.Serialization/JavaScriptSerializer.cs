@@ -284,7 +284,7 @@ namespace System.Web.Script.Serialization
 			foreach (object value in col)
 				list.Add (ConvertToType (value, elementType));
 
-			if (type != null && type.IsArray)
+			if (type != null && (type.IsArray || typeofObject == type))
 				list = ((ArrayList) list).ToArray (elementType);
 
 			return list;
@@ -319,9 +319,6 @@ namespace System.Web.Script.Serialization
 				object value = entry.Value;
 				if (target is IDictionary) {
 					Type valueType = ReflectionUtils.GetTypedDictionaryValueType (type);
-					if (value != null && valueType == typeof (System.Object))
-						valueType = value.GetType ();
-					
 					((IDictionary) target).Add (entry.Key, ConvertToType (value, valueType));
 					continue;
 				}
